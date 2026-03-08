@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>소통과 협력의 기술 | 인터랙티브 워크북</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #fefce8; color: #1f2937; }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container { height: 400px; }
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .glass-panel { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.3); }
+        .radio-btn:checked + label { background-color: #0f766e; color: white; border-color: #0f766e; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+
+<!-- Chosen Palette: Warm Neutrals & Calming Teal (Yellow-50 background, Teal-700 primary, Amber-500 accents) -->
+<!-- Application Structure Plan: A 4-tab Interactive Workbook. Tab 1 (Intro & Checklist): Converts the paper checklist into a dynamic radar chart for immediate visual feedback. Tab 2 (Vision): Transforms the written goal into a visual 'ID Card'. Tab 3 (Emotion Cards): Digitizes the card game to practice scenario-emotion matching. Tab 4 (Roleplay): An interactive 'I-Message' generator guiding students to structure conflict resolution logically. This flow mimics the 2-session lesson plan sequentially while enhancing engagement through immediate digital feedback. -->
+<!-- Visualization & Content Choices: 1. Checklist -> Radar Chart (Chart.js): Shows communication strengths/weaknesses visually. 2. Vision -> Dynamic Card (HTML/JS text sync): Makes the goal feel official and tangible. 3. Emotion Game -> Clickable Tags (HTML/JS): Active selection reinforces learning. 4. Roleplay -> I-Message Formulator (HTML inputs -> JS string builder): Teaches the formula logically. Confirming NO SVG/Mermaid used. -->
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+<header class="bg-teal-800 text-white shadow-md sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-2">
+            <span class="text-3xl">🤝</span>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight">소통과 협력의 기술</h1>
+                <p class="text-teal-200 text-xs uppercase tracking-wider">Happy Change Institute</p>
+            </div>
+        </div>
+        <nav class="flex gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 scrollbar-hide">
+            <button onclick="switchTab('tab1')" id="btn-tab1" class="px-4 py-2 rounded-full bg-teal-600 font-medium text-sm whitespace-nowrap transition-colors hover:bg-teal-500">1. 진단</button>
+            <button onclick="switchTab('tab2')" id="btn-tab2" class="px-4 py-2 rounded-full bg-teal-900 font-medium text-sm whitespace-nowrap transition-colors hover:bg-teal-500">2. 비전</button>
+            <button onclick="switchTab('tab3')" id="btn-tab3" class="px-4 py-2 rounded-full bg-teal-900 font-medium text-sm whitespace-nowrap transition-colors hover:bg-teal-500">3. 공감</button>
+            <button onclick="switchTab('tab4')" id="btn-tab4" class="px-4 py-2 rounded-full bg-teal-900 font-medium text-sm whitespace-nowrap transition-colors hover:bg-teal-500">4. 협력</button>
+        </nav>
+    </div>
+</header>
+
+<main class="flex-grow max-w-6xl mx-auto px-4 py-8 w-full">
+
+    <section id="tab1" class="tab-content active">
+        <div class="mb-8 bg-white p-6 rounded-2xl shadow-sm border border-amber-100">
+            <h2 class="text-2xl font-bold text-teal-800 mb-2">나를 알고 너를 여는 시간</h2>
+            <p class="text-gray-600">제공된 워크시트의 체크리스트를 디지털로 점검해보세요. 나의 소통 스타일이 어떤 모양을 그리고 있는지 방사형 그래프를 통해 직관적으로 확인할 수 있습니다.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="glass-panel p-6 rounded-3xl shadow-sm">
+                <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-teal-900"><span>📝</span> 소통 자가진단 체크리스트</h3>
+                <div id="checklist-container" class="space-y-4"></div>
+            </div>
+            
+            <div class="glass-panel p-6 rounded-3xl shadow-sm flex flex-col items-center justify-center">
+                <h3 class="text-xl font-bold mb-6 text-teal-900 w-full text-center">나의 소통 프로필</h3>
+                <div class="chart-container w-full">
+                    <canvas id="radarChart"></canvas>
+                </div>
+                <div class="mt-6 p-4 bg-teal-50 rounded-xl w-full">
+                    <p id="chart-insight" class="text-sm text-teal-800 text-center font-medium">체크리스트를 작성하여 나의 소통 강점과 보완점을 확인해보세요.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="tab2" class="tab-content">
+        <div class="mb-8 bg-white p-6 rounded-2xl shadow-sm border border-amber-100">
+            <h2 class="text-2xl font-bold text-teal-800 mb-2">내가 꿈꾸는 소통의 모습</h2>
+            <p class="text-gray-600">체크리스트 결과를 바탕으로, 내가 앞으로 친구들이나 팀원들에게 어떤 소통가로 기억되고 싶은지 핵심 키워드와 이유를 정리해봅니다.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+            <div class="glass-panel p-6 rounded-3xl shadow-sm space-y-6">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">나를 표현하는 소통 키워드 (예: 경청하는, 유쾌한, 따뜻한)</label>
+                    <input type="text" id="vision-keyword" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all" placeholder="키워드를 입력하세요" oninput="updateVision()">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">이 모습을 꿈꾸는 이유</label>
+                    <textarea id="vision-reason" rows="4" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all resize-none" placeholder="이유를 상세히 적어보세요" oninput="updateVision()"></textarea>
+                </div>
+            </div>
+
+            <div class="relative mt-4 md:mt-0">
+                <div class="absolute inset-0 bg-gradient-to-br from-teal-400 to-teal-700 transform rotate-3 rounded-3xl shadow-lg opacity-50"></div>
+                <div class="relative bg-white p-8 rounded-3xl shadow-xl flex flex-col items-center text-center border border-gray-100 min-h-[350px] justify-center">
+                    <div class="w-24 h-24 bg-amber-100 rounded-full flex items-center justify-center text-4xl mb-4 border-4 border-white shadow-sm">✨</div>
+                    <h3 class="text-sm font-bold text-amber-500 tracking-widest uppercase mb-1">Happy Communicator</h3>
+                    <div class="w-12 h-1 bg-teal-500 mb-6 rounded-full"></div>
+                    
+                    <h4 class="text-2xl font-bold text-gray-800 mb-4 break-words w-full">"<span id="display-keyword" class="text-teal-600">어떤</span> 사람"</h4>
+                    <p id="display-reason" class="text-gray-600 italic leading-relaxed text-sm w-full px-4">이유가 여기에 표시됩니다. 나의 다짐을 명확하게 시각화해보세요.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="tab3" class="tab-content">
+        <div class="mb-8 bg-white p-6 rounded-2xl shadow-sm border border-amber-100">
+            <h2 class="text-2xl font-bold text-teal-800 mb-2">감정 단어와 상황의 연결</h2>
+            <p class="text-gray-600">소통의 기본은 공감입니다. 다양한 학교 생활 상황 속에서 상대방이, 혹은 내가 느낄 수 있는 구체적인 감정 단어들을 매칭해보고 공감 능력을 키워보세요.</p>
+        </div>
+
+        <div class="glass-panel p-6 rounded-3xl shadow-sm text-center">
+            <div class="mb-8">
+                <h3 class="text-lg font-bold text-gray-700 mb-4">상황 카드를 하나 선택하세요</h3>
+                <div class="flex flex-wrap justify-center gap-3" id="scenario-buttons"></div>
+            </div>
+
+            <div id="emotion-workspace" class="hidden bg-amber-50 rounded-2xl p-6 border border-amber-200">
+                <h4 id="selected-scenario-text" class="text-xl font-bold text-teal-900 mb-6"></h4>
+                <p class="text-sm text-gray-500 mb-4">이 상황에서 어울리는 감정 단어를 모두 골라보세요.</p>
+                <div class="flex flex-wrap justify-center gap-2 mb-6" id="emotion-tags"></div>
+                <div class="mt-6 p-4 bg-white rounded-xl shadow-inner min-h-[100px]">
+                    <p class="text-sm font-bold text-gray-400 mb-2">내가 선택한 감정</p>
+                    <div id="selected-emotions" class="flex flex-wrap justify-center gap-2"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="tab4" class="tab-content">
+        <div class="mb-8 bg-white p-6 rounded-2xl shadow-sm border border-amber-100">
+            <h2 class="text-2xl font-bold text-teal-800 mb-2">갈등 해결 롤플레잉 (나-전달법)</h2>
+            <p class="text-gray-600">갈등은 피하는 것이 아니라 잘 해결하는 것이 중요합니다. 워크시트의 상황(예: 잦은 결석으로 인한 조별과제 불만)을 '나-전달법(I-Message)'을 이용해 부드럽게 대화하는 대본을 짜보세요.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="glass-panel p-6 rounded-3xl shadow-sm space-y-6">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">1. 관찰 (사실)</label>
+                    <p class="text-xs text-gray-500 mb-2">비난 없이 객관적인 사실만 적어보세요.</p>
+                    <input type="text" id="imsg-fact" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 outline-none" placeholder="예: 네가 조별 모임에 두 번 연속으로 빠졌을 때" oninput="generateIMessage()">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">2. 감정 (내 마음)</label>
+                    <p class="text-xs text-gray-500 mb-2">그 사실로 인해 내가 느낀 솔직한 감정은?</p>
+                    <input type="text" id="imsg-emotion" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 outline-none" placeholder="예: 나는 혼자 과제를 다 해야 할까봐 막막하고 서운했어" oninput="generateIMessage()">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">3. 부탁 (요청)</label>
+                    <p class="text-xs text-gray-500 mb-2">앞으로 바라는 점을 구체적으로 요청하세요.</p>
+                    <input type="text" id="imsg-request" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 outline-none" placeholder="예: 다음부터는 못 오게 되면 미리 단톡방에 알려주면 좋겠어" oninput="generateIMessage()">
+                </div>
+            </div>
+
+            <div class="glass-panel p-6 rounded-3xl shadow-sm bg-teal-50 flex flex-col h-full border border-teal-100">
+                <h3 class="text-lg font-bold text-teal-900 mb-4 flex items-center gap-2"><span>💬</span> 완성된 갈등 해결 대본</h3>
+                <div class="flex-grow flex items-center justify-center p-6 bg-white rounded-2xl shadow-sm text-center">
+                    <p id="imsg-result" class="text-xl text-gray-400 font-light leading-relaxed">좌측에 나-전달법 요소를 입력하면 완성된 문장이 이곳에 나타납니다.</p>
+                </div>
+                <div class="mt-4 text-center">
+                    <p class="text-xs font-bold text-teal-700 mb-2">우리 팀 갈등 해결 규칙</p>
+                    <div class="bg-white px-4 py-2 rounded-lg inline-block text-sm text-gray-700 shadow-sm">
+                        "갈등이 생기면 우리는 무조건 <span class="text-teal-600 font-bold">나-전달법</span>으로 이야기한다!"
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<script>
+    const questions = [
+        "1. 나는 상대방의 말을 끝까지 경청하며, 중간에 끼어들지 않는다.",
+        "2. 나는 내 의견을 말할 때, 상대방이 이해하기 쉽도록 명확하고 간결하게 표현한다.",
+        "3. 나는 대화 중 상대방의 감정을 존중하며, 공감의 말을 자주 사용한다.",
+        "4. 나는 갈등 상황에서도 감정을 조절하며 차분하게 대화하려고 노력한다.",
+        "5. 나는 팀 활동에서 다른 사람의 의견을 존중하고, 내 역할을 책임감 있게 수행한다.",
+        "6. 나는 공용 물건이나 공간을 사용할 때, 다른 사람을 배려한다.",
+        "7. 나는 의견이 다를 때, 상대방의 입장을 먼저 이해하려고 노력한다.",
+        "8. 나는 상대방의 좋은 점이나 장점을 발견하면, 적극적으로 칭찬한다."
+    ];
+
+    const labels = ["경청", "명확성", "공감", "감정조절", "책임감", "배려", "역지사지", "칭찬"];
+    let scores = [0, 0, 0, 0, 0, 0, 0, 0];
+    let radarChart;
+
+    const scenarios = [
+        "수행평가 조별 과제에서 나만 일을 다 하고 있는 것 같을 때",
+        "친한 친구가 내가 말하지 않은 비밀을 다른 친구에게 말했을 때",
+        "부모님이 나의 노력은 무시하고 결과만 나무라실 때",
+        "친구들이 내 이야기를 듣고 진심으로 축하해줄 때"
+    ];
+
+    const emotionWords = ["억울한", "서운한", "답답한", "막막한", "당황스러운", "배신감 드는", "뿌듯한", "안도하는", "벅찬", "고마운", "민망한", "외로운"];
+    let currentSelectedEmotions = new Set();
+
+    function init() {
+        buildChecklist();
+        initChart();
+        buildScenarios();
+        buildEmotions();
+    }
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        
+        const tabs = ['tab1', 'tab2', 'tab3', 'tab4'];
+        tabs.forEach(id => {
+            const btn = document.getElementById('btn-' + id);
+            if(id === tabId) {
+                btn.classList.remove('bg-teal-900');
+                btn.classList.add('bg-teal-600');
+            } else {
+                btn.classList.remove('bg-teal-600');
+                btn.classList.add('bg-teal-900');
+            }
+        });
+    }
+
+    function buildChecklist() {
+        const container = document.getElementById('checklist-container');
+        questions.forEach((q, index) => {
+            const div = document.createElement('div');
+            div.className = "p-4 bg-white rounded-xl border border-gray-100 shadow-sm";
+            div.innerHTML = `
+                <p class="text-sm font-medium text-gray-800 mb-3">${q}</p>
+                <div class="flex gap-2">
+                    <div class="flex-1">
+                        <input type="radio" name="q${index}" id="q${index}-3" value="3" class="hidden radio-btn" onchange="updateScore(${index}, 3)">
+                        <label for="q${index}-3" class="block text-center py-2 border rounded-lg text-xs font-bold text-gray-500 cursor-pointer transition-colors">항상 그렇다</label>
+                    </div>
+                    <div class="flex-1">
+                        <input type="radio" name="q${index}" id="q${index}-2" value="2" class="hidden radio-btn" onchange="updateScore(${index}, 2)">
+                        <label for="q${index}-2" class="block text-center py-2 border rounded-lg text-xs font-bold text-gray-500 cursor-pointer transition-colors">때때로 그렇다</label>
+                    </div>
+                    <div class="flex-1">
+                        <input type="radio" name="q${index}" id="q${index}-1" value="1" class="hidden radio-btn" onchange="updateScore(${index}, 1)">
+                        <label for="q${index}-1" class="block text-center py-2 border rounded-lg text-xs font-bold text-gray-500 cursor-pointer transition-colors">그렇지 않다</label>
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function initChart() {
+        const ctx = document.getElementById('radarChart').getContext('2d');
+        radarChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '나의 소통 점수',
+                    data: scores,
+                    backgroundColor: 'rgba(15, 118, 110, 0.2)',
+                    borderColor: 'rgba(15, 118, 110, 1)',
+                    pointBackgroundColor: 'rgba(234, 88, 12, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(234, 88, 12, 1)',
+                    borderWidth: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: { color: 'rgba(0, 0, 0, 0.1)' },
+                        grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                        pointLabels: { font: { family: 'Noto Sans KR', size: 12, weight: 'bold' }, color: '#374151' },
+                        min: 0,
+                        max: 3,
+                        ticks: { stepSize: 1, display: false }
+                    }
+                },
+                plugins: { legend: { display: false }, tooltip: { enabled: false } }
+            }
+        });
+    }
+
+    function updateScore(index, value) {
+        scores[index] = value;
+        radarChart.update();
+        
+        const answered = scores.filter(s => s > 0).length;
+        const msg = document.getElementById('chart-insight');
+        if (answered === 8) {
+            const sum = scores.reduce((a, b) => a + b, 0);
+            if (sum >= 20) msg.innerHTML = "훌륭합니다! 전반적으로 균형 잡힌 소통 능력을 갖추고 계시네요. ✨";
+            else msg.innerHTML = "조금씩 소통 기술을 다듬어간다면 더욱 멋진 관계를 맺을 수 있을 거예요! 🌱";
+        }
+    }
+
+    function updateVision() {
+        const kw = document.getElementById('vision-keyword').value;
+        const reason = document.getElementById('vision-reason').value;
+        document.getElementById('display-keyword').innerText = kw ? kw : "어떤";
+        document.getElementById('display-reason').innerText = reason ? reason : "이유가 여기에 표시됩니다. 나의 다짐을 명확하게 시각화해보세요.";
+    }
+
+    function buildScenarios() {
+        const container = document.getElementById('scenario-buttons');
+        scenarios.forEach((sc, i) => {
+            const btn = document.createElement('button');
+            btn.className = "px-4 py-2 bg-white border-2 border-amber-200 text-amber-700 rounded-full text-sm font-bold hover:bg-amber-100 transition-colors text-left max-w-full";
+            btn.innerText = `상황 ${i+1}`;
+            btn.onclick = () => selectScenario(sc, btn);
+            container.appendChild(btn);
+        });
+    }
+
+    function selectScenario(text, btnElement) {
+        document.querySelectorAll('#scenario-buttons button').forEach(b => b.classList.remove('bg-amber-500', 'text-white', 'border-amber-500'));
+        btnElement.classList.add('bg-amber-500', 'text-white', 'border-amber-500');
+        btnElement.classList.remove('bg-white', 'text-amber-700', 'border-amber-200');
+        
+        document.getElementById('emotion-workspace').classList.remove('hidden');
+        document.getElementById('selected-scenario-text').innerText = `"${text}"`;
+        
+        currentSelectedEmotions.clear();
+        updateSelectedEmotionsUI();
+        
+        document.querySelectorAll('.emo-tag').forEach(tag => {
+            tag.classList.remove('bg-teal-600', 'text-white');
+            tag.classList.add('bg-white', 'text-gray-600');
+        });
+    }
+
+    function buildEmotions() {
+        const container = document.getElementById('emotion-tags');
+        emotionWords.forEach(word => {
+            const btn = document.createElement('button');
+            btn.className = "emo-tag px-3 py-1 bg-white border border-gray-300 text-gray-600 rounded-lg text-sm transition-colors hover:border-teal-500";
+            btn.innerText = word;
+            btn.onclick = () => toggleEmotion(word, btn);
+            container.appendChild(btn);
+        });
+    }
+
+    function toggleEmotion(word, btn) {
+        if (currentSelectedEmotions.has(word)) {
+            currentSelectedEmotions.delete(word);
+            btn.classList.remove('bg-teal-600', 'text-white', 'border-teal-600');
+            btn.classList.add('bg-white', 'text-gray-600');
+        } else {
+            currentSelectedEmotions.add(word);
+            btn.classList.add('bg-teal-600', 'text-white', 'border-teal-600');
+            btn.classList.remove('bg-white', 'text-gray-600');
+        }
+        updateSelectedEmotionsUI();
+    }
+
+    function updateSelectedEmotionsUI() {
+        const container = document.getElementById('selected-emotions');
+        container.innerHTML = '';
+        if (currentSelectedEmotions.size === 0) {
+            container.innerHTML = '<span class="text-sm text-gray-400">아직 선택된 감정이 없습니다.</span>';
+            return;
+        }
+        currentSelectedEmotions.forEach(word => {
+            const span = document.createElement('span');
+            span.className = "px-3 py-1 bg-teal-100 text-teal-800 rounded-full text-sm font-bold shadow-sm";
+            span.innerText = word;
+            container.appendChild(span);
+        });
+    }
+
+    function generateIMessage() {
+        const fact = document.getElementById('imsg-fact').value;
+        const emotion = document.getElementById('imsg-emotion').value;
+        const request = document.getElementById('imsg-request').value;
+        const resultEl = document.getElementById('imsg-result');
+
+        if (!fact && !emotion && !request) {
+            resultEl.innerHTML = "좌측에 나-전달법 요소를 입력하면 완성된 문장이 이곳에 나타납니다.";
+            resultEl.classList.add('text-gray-400', 'font-light');
+            resultEl.classList.remove('text-teal-900', 'font-bold');
+            return;
+        }
+
+        let msg = "";
+        if (fact) msg += `<span class="text-amber-600 border-b-2 border-amber-200">${fact}</span> 상황에서, `;
+        if (emotion) msg += `나는 <span class="text-blue-600 border-b-2 border-blue-200">${emotion}</span> 기분이 들었어. `;
+        if (request) msg += `앞으로는 <span class="text-teal-600 border-b-2 border-teal-200">${request}</span> 해주면 좋겠어.`;
+
+        resultEl.innerHTML = `"${msg}"`;
+        resultEl.classList.remove('text-gray-400', 'font-light');
+        resultEl.classList.add('text-gray-800', 'font-medium');
+    }
+
+    window.onload = init;
+</script>
+
+</body>
+</html>
