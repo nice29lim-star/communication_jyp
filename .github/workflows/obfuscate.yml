@@ -1,0 +1,44 @@
+name: Obfuscate and Deploy
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # 깃허브가 스스로 브랜치를 만들고 글을 쓸 수 있게 허용합니다.
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Tools
+        run: npm install -g javascript-obfuscator html-minifier
+
+      - name: Process Files
+        run: |
+          mkdir -p dist
+          # 1. 현재 모든 파일을 dist 폴더로 복사합니다.
+          cp -rv ./* dist/ 2>/dev/null || true
+          rm -rf dist/.github dist/.git
+          
+          # 2. HTML 파일을 압축해서 dist에 저장합니다.
+          html-minifier --input-dir ./ --output-dir ./dist --collapse-whitespace --recursive --file-ext html || true
+          
+          # 3. 자바스크립트(.js) 파일만 골라내어 난독화합니다.
+          if [ -n "$(find . -maxdepth 2 -name "*.js" -not -path "./dist/*")" ]; then
+            find . -maxdepth 2 -name "*.js" -not -path "./dist/*" -exec javascript-obfuscator {} --output ./dist --compact true \;
+          fi
+
+      - name: Deploy to deploy branch
+        # 가장 검증된 배포 도구인 JamesIves의 액션을 사용합니다.
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: dist    # 난독화된 파일들이 모여있는 폴더
+          branch: deploy  # 결과물을 보낼 브랜치 이름
